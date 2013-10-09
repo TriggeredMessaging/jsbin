@@ -125,7 +125,10 @@ var renderer = (function () {
    * Log error messages, indicating that it's from the renderer.
    */
   renderer.error = function () {
-    window.console.error.apply(console, ['Renderer:'].concat([].slice.call(arguments)));
+    // it's quite likely that the error that fires on this handler actually comes
+    // from another service on the page, like a browser plugin, which we can
+    // safely ignore.
+    window.console.warn.apply(console, ['Renderer:'].concat([].slice.call(arguments)));
   };
 
   /**
@@ -263,8 +266,8 @@ var renderLivePreview = (function () {
     iframe.setAttribute('class', 'stretch');
     iframe.setAttribute('sandbox', 'allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts');
     iframe.setAttribute('frameBorder', '0');
-    iframe.src = jsbin.root.replace('jsbin', 'run.jsbin') + '/runner';
     $live.prepend(iframe);
+    iframe.src = jsbin.runner;
     try {
       iframe.contentWindow.name = '/' + jsbin.state.code + '/' + jsbin.state.revision;
     } catch (e) {

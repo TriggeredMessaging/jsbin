@@ -8,7 +8,7 @@ var editorModes = {
   typescript: 'javascript',
   markdown: 'markdown',
   coffeescript: 'coffeescript',
-  less: 'css',
+  less: 'less',
   processing: 'text/x-csrc'
 };
 
@@ -46,7 +46,7 @@ var emmetToggleComment = emmet.require('actions').get('toggle_comment');
 emmet.require('actions').add('toggle_comment', function(editor) {
   var info = emmet.require('editorUtils').outputInfo(editor);
   if (info.syntax == 'javascript') {
-    // in case our editor is good enough and can recognize syntax from 
+    // in case our editor is good enough and can recognize syntax from
     // current token, we have to make sure that cursor is not inside
     // 'style' attribute of html element
     var editorUtils = emmet.require('editorUtils');
@@ -226,6 +226,7 @@ Panel.prototype = {
   virgin: true,
   visible: false,
   show: function (x) {
+    $document.trigger('history:close');
     // check to see if there's a panel to the left.
     // if there is, take it's size/2 and make this our
     // width
@@ -353,7 +354,10 @@ Panel.prototype = {
 
     $document.trigger('sizeeditors');
     panel.trigger('hide');
-    // }, 110);
+
+    // note: the history:open does first check whether there's an open panels
+    // and if there are, it won't show the history, it'll just ignore the event
+    $document.trigger('history:open');
   },
   toggle: function () {
     (this)[this.visible ? 'hide' : 'show']();
@@ -466,8 +470,8 @@ Panel.prototype = {
           offset += ($error.filter(':visible').height() || 0);
         }
 
-        if (!jsbin.lameEditor) { 
-          editor.scroller.height(height - offset); 
+        if (!jsbin.lameEditor) {
+          editor.scroller.height(height - offset);
         }
         try { editor.refresh(); } catch (e) {}
       }

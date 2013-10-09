@@ -5,7 +5,8 @@
     "host": "localhost:3001",
     "prefix": "/",
     "ssl": false,
-    "static": false
+    "static": false,
+    "runner": false
   },
   "max-request-size": "1MB",
   "store": {
@@ -45,6 +46,10 @@
   },
   "client": {
     "user": true
+  },
+  "github": {
+    "id": "",
+    "secret": ""
   },
   "notify": {
     "errors": [],
@@ -101,6 +106,7 @@
     "goodies",
     "help",
     "home",
+    "hooks",
     "inbox",
     "invitations",
     "invite",

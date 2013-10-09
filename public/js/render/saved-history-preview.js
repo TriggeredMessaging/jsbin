@@ -1,6 +1,17 @@
 ;(function () {
   var $body = $('body'),
-      loaded = false;
+      loaded = false,
+      $history; // set in hookUserHistory()
+
+  $document.on('history:open', function () {
+    if ($history && jsbin.panels.getVisible().length === 0) {
+      $history.appendTo('body');
+    }
+  }).on('history:close', function () {
+    if ($history === null) {
+      $history = $('#history').detach();
+    }
+  });
 
   var loadList = function () {
     if (loaded) return;
@@ -55,8 +66,8 @@
 
   var hookUserHistory = function () {
     // Loading the HTML from the server may have failed
-    var $history = $('#history');
-    if (!$history.length) return;
+    $history = $('#history').detach();
+    if (!$history.length) return $history;
 
     // Cache some useful elements
     var $iframe = $('iframe', $history),
@@ -82,6 +93,9 @@
           $row = $this.parents('tr');
       // Instantly update this row and the page layout
       $row.toggleClass('archived');
+
+      analytics[this.pathname.indexOf('unarchive') === -1 ? 'archive' : 'unarchive'](jsbin.root + $row.data('url'));
+
       updateLayout($tbodys, $history.hasClass('archive_mode'));
       // Then send the update to the server
       $.ajax({
@@ -101,7 +115,9 @@
     // Handle toggling of archive view
     $toggle.change(function () {
       $history.toggleClass('archive_mode');
-      updateLayout($tbodys, $history.hasClass('archive_mode'));
+      var archive = $history.hasClass('archive_mode');
+      analytics.archiveView(archive);
+      updateLayout($tbodys, archive);
     });
 
 
@@ -137,6 +153,9 @@
       updateLayout($tbodys, false);
     }, 0);
 
+    $document.trigger('history:open');
+
+    return $history;
   };
 
   // inside a ready call because history DOM is rendered *after* our JS to improve load times.

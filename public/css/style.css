@@ -32,7 +32,8 @@ td small {
   font-size: 12px;
 }
 
-input {
+input,
+#sharemenu span /* stupid fix for IE9's custom font handling */ {
   font-family: "Helvetica Neue", Helvetica, Arial;
 }
 
@@ -293,7 +294,8 @@ iframe.javascript {
   /*margin-right: 10px;*/
 }
 
-.dropdownmenu a, .button {
+.dropdownmenu a,
+.button {
   position: relative;
   border: 1px solid transparent;
   border-top: 0;
@@ -2478,6 +2480,17 @@ a.active:hover {
   left: -10px;
 }
 
+#share .lockoption {
+  margin: 10px -10px -10px;
+  cursor: pointer;
+  padding: 10px;
+  background: #F4FAFF;
+}
+
+#share .lockoption:hover {
+  background: #e9f3fe;
+}
+
 #sharemenu.hidden {
   top: -40px;
 }
@@ -2491,22 +2504,27 @@ a.active:hover {
   top: 0;
 }
 
-#sharemenu strong {
+#sharemenu strong,
+#sharemenu .dropdowncontent .heading {
   font-size: 15px;
   padding: 2px 0;
   display: inline-block;
   color: #000;
+  text-decoration: none;
 }
 
 #sharemenu strong a {
   text-decoration: none;
 }
 
-.dropdownmenu {
-  /* margin: 3px 5px; */
+#sharemenu hr {
+  margin: 10px -10px;
 }
 
-.dropdownmenu a {
+
+.dropdownmenu a,
+.dropdownmenu .button {
+  cursor: pointer;
   padding: 6px 100px 6px 10px;
   /* font-weight: bold; */
 }
@@ -2693,8 +2711,9 @@ pre .highlight:last-of-type {
 
 .brand {
   display: inline-block;
-  font-weight: bold;
+  /*font-weight: bold;*/
   padding: 10px;
+  margin-left: 5px;
 }
 
 .brand h1 {
@@ -2833,6 +2852,39 @@ pre .highlight:last-of-type {
 
 .dd-right .keyshortcut {
   right: 20px;
+}
+
+#share {
+  width: 320px;
+}
+
+.inline {
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.inline li {
+  float: left;
+  list-style: none;
+}
+
+#share .inline label {
+  font-weight: normal;
+  margin: 0;
+  margin-right: 8px;
+  color: #333;
+  cursor: pointer;
+}
+
+#share .inline li:last-of-type {
+  margin-right: 0;
+}
+
+#share .inline input {
+  margin-left: 0;
+  cursor: pointer !important;
 }
 
 /** CodeMirror Themes **/

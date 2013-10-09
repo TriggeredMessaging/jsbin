@@ -10,34 +10,29 @@ $('a.save').click(function (event) {
 });
 
 var $shareLinks = $('#share .link');
-$document.one('saved', function () {
-  $shareLinks.removeClass('disabled').unbind('click mousedown mouseup');
-});
 
-function onSaveError(jqXHR) {
-  if (jqXHR.status === 413) {
-    // Hijack the tip label to show an error message.
-    $('#tip p').html('Sorry this bin is too large for us to save');
-    $(document.documentElement).addClass('showtip');
-  } else {
-    window._console.error({message: 'Warning: Something went wrong while saving. Your most recent work is not saved.'});
-    $document.trigger('tip', {
-      type: 'error',
-      content: 'Something went wrong while saving. Your most recent work is not saved.'
-    });
-  }
-}
+$panelCheckboxes = $('#sharemenu #sharepanels input');
 
 function updateSavedState() {
+  var mapping = {
+    live: 'output',
+    javascript: 'js',
+    css: 'css',
+    html: 'html',
+    console: 'console'
+  };
+  var query = $panelCheckboxes.filter(':checked').map(function () {
+    return mapping[this.getAttribute('data-panel')];
+  }).get().join(',');
   $shareLinks.each(function () {
-    var url = jsbin.getURL() + this.getAttribute('data-path'),
+    var url = jsbin.getURL() + this.getAttribute('data-path') + (query && this.id !== 'livepreview' ? '?' + query : ''),
         nodeName = this.nodeName;
     if (nodeName === 'A') {
       this.href = url;
     } else if (nodeName === 'INPUT') {
       this.value = url;
     } else if (nodeName === 'TEXTAREA') {
-      this.value = ('<a class="jsbin-embed" href="' + url + '?live">' + documentTitle + '</a><' + 'script src="' + jsbin.static + '/js/embed.js"><' + '/script>').replace(/<>"&/g, function (m) {
+      this.value = ('<a class="jsbin-embed" href="' + url + '">' + documentTitle + '</a><' + 'script src="' + jsbin.static + '/js/embed.js"><' + '/script>').replace(/<>"&/g, function (m) {
           return {
             '<': '&lt;',
             '>': '&gt;',
@@ -73,6 +68,10 @@ if (saveChecksum) {
   });
 }
 
+$document.one('saved', function () {
+  $('#share div.disabled').removeClass('disabled').unbind('click mousedown mouseup');
+});
+
 // TODO decide whether to expose this code, it disables live saving for IE users
 // until they refresh - via a great big yellow button. For now this is hidden
 // in favour of the nasty hash hack.
@@ -86,17 +85,34 @@ if (false) { // !saveChecksum && !history.pushState) {
   });
 }
 
+function onSaveError(jqXHR, panelId) {
+  if (jqXHR.status === 413) {
+    // Hijack the tip label to show an error message.
+    $('#tip p').html('Sorry this bin is too large for us to save');
+    $(document.documentElement).addClass('showtip');
+  } else {
+    if (panelId) savingLabels[panelId].text('Saving...').animate({ opacity: 1 }, 100);
+    window._console.error({message: 'Warning: Something went wrong while saving. Your most recent work is not saved.'});
+    // $document.trigger('tip', {
+    //   type: 'error',
+    //   content: 'Something went wrong while saving. Your most recent work is not saved.'
+    // });
+  }
+}
+
+
+
 // only start live saving it they're allowed to (whereas save is disabled if they're following)
 if (!jsbin.saveDisabled) {
+  $('.code.panel .label .name').append('<span>Saved</span>');
+
+  var savingLabels = {
+    html: $('.panel.html .name span'),
+    javascript: $('.panel.javascript .name span'),
+    css: $('.panel.css .name span')
+  };
+
   $document.bind('jsbinReady', function () {
-    $('.code.panel .label .name').append('<span>Saved</span>');
-
-    var savingLabels = {
-      html: $('.panel.html .name span'),
-      javascript: $('.panel.javascript .name span'),
-      css: $('.panel.css .name span')
-    };
-
     jsbin.panels.allEditors(function (panel) {
       panel.on('processor', function () {
         // if the url doesn't match the root - i.e. they've actually saved something then save on processor change
@@ -115,17 +131,13 @@ if (!jsbin.saveDisabled) {
 
     $document.bind('saveComplete', throttle(function (event, data) {
       // show saved, then revert out animation
-      savingLabels[data.panelId].stop(true, true).animate({ 'opacity': 1 }, 100).delay(1200).animate({
-        'opacity': '0'
-      }, 500);
+      savingLabels[data.panelId]
+        .text('Saved')
+        .stop(true, true)
+        .animate({ opacity: 1 }, 100)
+        .delay(1200)
+        .animate({ opacity: 0 }, 500);
     }, 500));
-
-    // TODO use sockets for streaming...or not?
-    // var stream = false;
-
-    // if (jsbin.state.stream && window.WebSocket) {
-    //   stream = new WebSocket('ws://' + window.location.origin + '/update');
-    // }
 
     $document.bind('codeChange', throttle(function (event, data) {
       if (!data.panelId) return;
@@ -163,7 +175,9 @@ if (!jsbin.saveDisabled) {
               });
             }
           },
-          error: onSaveError
+          error: function (jqXHR) {
+            onSaveError(jqXHR, data.panelId);
+          }
         });
       }
     }, 250));
@@ -262,15 +276,74 @@ function saveCode(method, ajax, ajaxCallback) {
         $document.trigger('saved');
 
         if (window.history && window.history.pushState) {
-          window.history.pushState(null, edit, edit);
+          updateURL(edit);
           sessionStorage.setItem('url', jsbin.getURL());
         } else {
           window.location.hash = data.edit;
         }
       },
-      error: onSaveError
+      error: function (jqXHR) {
+        onSaveError(jqXHR);
+      }
     });
   } else {
     $form.submit();
   }
+}
+
+/**
+ * Returns the similar part of two strings
+ * @param  {String} a first string
+ * @param  {String} b second string
+ * @return {String}   common substring
+ */
+function sameStart(a, b) {
+  if (a == b) return a;
+
+  var tmp = b.slice(0, 1);
+  while (a.indexOf(b.slice(0, tmp.length + 1)) === 0) {
+    tmp = b.slice(0, tmp.length + 1);
+  }
+
+  return tmp;
+}
+
+// refresh the window when we popstate, because for now we don't do an xhr to
+// inject the panel content...yet.
+window.onpopstate = function onpopstate(event) {
+  // ignore the first popstate event, because that comes from the browser...
+  if (!onpopstate.first) window.location.reload();
+  else onpopstate.first = false;
+};
+
+onpopstate.first = true;
+
+function updateURL(path) {
+  var old = location.pathname,
+      back = true,
+      same = sameStart(old, path);
+      sameAt = same.length;
+
+  if (updateURL.timer) window.cancelAnimationFrame(updateURL.timer);
+
+  var run = function () {
+    if (location.pathname !== path) {
+      updateURL.timer = window.requestAnimationFrame(run);
+    }
+
+    if (location.pathname !== same) {
+      if (back) {
+        history.replaceState({ path: path }, '', location.pathname.slice(0, -1));
+      } else {
+        history.replaceState({ path: path }, '', path.slice(0, location.pathname.length + 1));
+      }
+    } else {
+      back = false;
+      history.replaceState({ path: path }, '', path.slice(0, sameAt + 2));
+    }
+  };
+
+  history.pushState({ path: path }, '', location.pathname.slice(0, -1));
+
+  run();
 }
