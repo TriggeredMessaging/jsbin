@@ -2,7 +2,7 @@
   "env": "development",
   "timezone": "UTC",
   "url": {
-    "host": "localhost:3000",
+    "host": "localhost:3001",
     "prefix": "/",
     "ssl": false,
     "static": false
@@ -51,7 +51,7 @@
     "report": []
   },
   "api": {
-    "allowAnonymous": false,
+    "allowAnonymous": true,
     "allowReadOnly": true,
     "requireSSL": false
   },
